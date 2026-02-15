@@ -4,6 +4,20 @@ AI-Powered Fatigue Risk Detection Intelligence
 
 ---
 
+## Hackathon Categories
+
+- AI / Machine Learning
+- Sustainability
+- Health & Wellbeing
+- Enterprise / Productivity
+
+---
+
+## 🌐 Domain
+
+greenwatch-ai.tech
+
+
 ## Elevator Pitch
 
 GreenWatch is an AI fatigue detection co-pilot that reduces human-error incidents in critical industries through real-time voice analysis.
@@ -93,9 +107,3 @@ To make human sustainability the foundation of environmental sustainability.
 ## Demo
 
 we need to insert a demo link !!!
-
----
-
-## Domain 
-
-greenwatch-ai.tech
