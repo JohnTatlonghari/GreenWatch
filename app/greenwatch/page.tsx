@@ -1,4 +1,4 @@
-import { GreenWatchContainer } from "@/components/greenwatch/greenwatch-container"
+import {GreenWatchContainer} from "@/components/greenwatch/greenwatch-container"
 
 export const metadata = {
   title: "GreenWatch - Document Analysis",

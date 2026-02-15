@@ -4,6 +4,21 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Bot, User, FileText, Leaf } from "lucide-react"
 
+export type Attachment = {
+  id: string
+  name: string
+  size: number
+  url?: string
+}
+
+export type Message = {
+  id: string
+  role: "user" | "assistant"
+  content?: string
+  timestamp: Date
+  category?: "document" | "emotional"
+  attachments?: Attachment[]
+}
 // ... (formatTime and formatFileSize helpers remain the same)
 function formatTime(date: Date) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })

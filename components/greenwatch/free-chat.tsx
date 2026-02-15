@@ -4,14 +4,24 @@ import { useRef, useEffect, useState, useCallback } from "react"
 import { ChatMessage, type Message } from "@/components/chat-message"
 import { ChatInput } from "@/components/chat-input"
 import { TypingIndicator } from "@/components/typing-indicator"
-import { sendMessage } from "@/lib/api"
+
 
 interface FreeChatProps {
-  documentId: string
   initialMessages: Message[]
 }
 
-export function FreeChat({ documentId, initialMessages }: FreeChatProps) {
+async function sendMessage(text: string): Promise<string> {
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: text }),
+  })
+  if (!response.ok) throw new Error("Failed to send message")
+  const data = await response.json()
+  return data.reply
+}
+
+export function FreeChat({initialMessages }: FreeChatProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [isTyping, setIsTyping] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -32,7 +42,7 @@ export function FreeChat({ documentId, initialMessages }: FreeChatProps) {
       setIsTyping(true)
 
       try {
-        const reply = await sendMessage(documentId, text)
+        const reply = await sendMessage(text)
         const assistantMsg: Message = {
           id: `assistant-${Date.now()}`,
           role: "assistant",
@@ -53,7 +63,7 @@ export function FreeChat({ documentId, initialMessages }: FreeChatProps) {
         setIsTyping(false)
       }
     },
-    [documentId]
+    []
   )
 
   return (

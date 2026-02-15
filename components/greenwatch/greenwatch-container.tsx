@@ -1,12 +1,14 @@
 "use client"
-
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { GreenWatchHeader } from "@/components/greenwatch/greenwatch-header"
 import { DocumentUpload } from "@/components/greenwatch/document-upload"
 import { QuestionFlow } from "@/components/greenwatch/question-flow"
 import { FreeChat } from "@/components/greenwatch/free-chat"
 import { ChatInput } from "@/components/chat-input"
-import { uploadDocument } from "@/lib/api"
+
+// Import the API functions
+import { sessionStart, sessionHistory, SessionStartResponse, health } from "@/lib/api"
+
 import type { Message } from "@/components/chat-message"
 
 type Phase = "upload" | "questions" | "chat"
@@ -14,27 +16,63 @@ type Phase = "upload" | "questions" | "chat"
 export function GreenWatchContainer() {
   const [phase, setPhase] = useState<Phase>("upload")
   const [documentName, setDocumentName] = useState<string | undefined>()
-  const [documentId, setDocumentId] = useState<string>("")
+  const [sessionId, setSessionId] = useState<string>("")
   const [chatMessages, setChatMessages] = useState<Message[]>([])
+  const [isInitializing, setIsInitializing] = useState(false)
 
-  const handleUpload = useCallback(async (file: File) => {
-    setDocumentName(file.name)
+  const [isBackendReady, setIsBackendReady] = useState<boolean>(false)
+  const [healthError, setHealthError] = useState<string | null>(null)
 
-    // Call the boilerplate backend upload
-    try {
-      const result = await uploadDocument(file)
-      setDocumentId(result.documentId)
-    } catch {
-      // Fallback ID in case the mock fails
-      setDocumentId(`doc-${Date.now()}`)
+  // 1. Implement the health check on mount
+  useEffect(() => {
+    async function checkHealth() {
+      try {
+        const status = await health() //
+        
+        if (status.ok && status.llm_loaded) {
+          setIsBackendReady(true)
+          console.log(`LLM Loaded: ${status.llm_model}`)
+        } else if (!status.llm_loaded) {
+          //setHealthError("Backend is running, but LLM is still loading...")
+        }
+      } catch (err) {
+        //setHealthError("Cannot connect to the AI runner. Is it running on port 8080?")
+        setIsBackendReady(false)
+      }
     }
 
-    setPhase("questions")
+    checkHealth()
+  }, [])
+
+  const handleUpload = useCallback(async (file: File) => {
+    setIsInitializing(true)
+    setDocumentName(file.name)
+
+    try {
+      // 1. Start the session via the Runner API
+      const session: SessionStartResponse = await sessionStart()
+      
+      // 2. Store the session ID for subsequent message calls
+      setSessionId(session.session_id)
+      
+      // 3. Move to the questions phase
+      // Note: In a real app, you'd likely upload the file to a different 
+      // endpoint, but here we initiate the conversation flow.
+      setPhase("questions")
+    } catch (error) {
+      console.error("Failed to start session:", error)
+      // Fallback or error handling
+      setSessionId(`fallback-${Date.now()}`)
+      setPhase("questions")
+    } finally {
+      setIsInitializing(false)
+    }
   }, [])
 
   const handleQuestionsComplete = useCallback(
-    (_answers: Record<string, string>, messages: Message[]) => {
-      // TODO: Send answers to backend via submitAnswers()
+    async (_answers: Record<string, string>, messages: Message[]) => {
+      // The session is already active in the backend. 
+      // We update our local UI state to transition to the free chat phase.
       setChatMessages(messages)
       setPhase("chat")
     },
@@ -44,7 +82,7 @@ export function GreenWatchContainer() {
   const handleReset = useCallback(() => {
     setPhase("upload")
     setDocumentName(undefined)
-    setDocumentId("")
+    setSessionId("")
     setChatMessages([])
   }, [])
 
@@ -52,15 +90,28 @@ export function GreenWatchContainer() {
     <div className="flex h-screen flex-col bg-background">
       <GreenWatchHeader documentName={documentName} onReset={handleReset} />
 
+      {/* 2. Use the health status to guide the user */}
       {phase === "upload" && (
         <>
-          <DocumentUpload onUpload={handleUpload} />
-          {/* Disabled input shown at bottom so the user sees the full chat UI */}
+          {healthError && (
+            <div className="p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg dark:bg-gray-800 dark:text-red-400">
+              {healthError}
+            </div>
+          )}
+          
+          <DocumentUpload 
+            onUpload={handleUpload} 
+          />
+          
           <ChatInput
             onSend={() => {}}
             isLoading={false}
             disabled
-            placeholder="Upload a document to begin..."
+            placeholder={
+              (!isBackendReady && isInitializing)
+                ? "Waiting for AI engine..." 
+                : "Upload a document to begin..."
+            }
           />
         </>
       )}
@@ -68,12 +119,13 @@ export function GreenWatchContainer() {
       {phase === "questions" && documentName && (
         <QuestionFlow
           documentName={documentName}
+          sessionId={sessionId}
           onComplete={handleQuestionsComplete}
         />
       )}
 
       {phase === "chat" && (
-        <FreeChat documentId={documentId} initialMessages={chatMessages} />
+        <FreeChat initialMessages={chatMessages} />
       )}
     </div>
   )
