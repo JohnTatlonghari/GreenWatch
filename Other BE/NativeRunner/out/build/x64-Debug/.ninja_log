@@ -1,4 +1,6 @@
 # ninja log v5
-23	5928	7928349006729884	CMakeFiles/greenwatch_runner.dir/src/main.cpp.obj	d77b8a7baa8b5b48
-5929	6337	7928349010297654	greenwatch_runner.exe	28dc1688ce4afe17
-2	17	0	clean	8c45b54705a541e8
+32	6281	7928448716489424	CMakeFiles/greenwatch_runner.dir/src/main.cpp.obj	830c8f4eec284c9
+6282	6837	7928448721460490	greenwatch_runner.exe	28dc1688ce4afe17
+15	259	7928517376357471	build.ninja	d673aa9713fb5eb8
+32	5938	7928518434044756	CMakeFiles/greenwatch_runner.dir/src/main.cpp.obj	830c8f4eec284c9
+5939	6698	7928518440764944	greenwatch_runner.exe	28dc1688ce4afe17
