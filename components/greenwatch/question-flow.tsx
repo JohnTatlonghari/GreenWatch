@@ -1,5 +1,3 @@
-"use client"
-
 import { useRef, useEffect, useCallback, useState } from "react"
 import { Progress } from "@/components/ui/progress"
 import { ChatMessage, type Message } from "@/components/chat-message"
@@ -12,45 +10,13 @@ export interface Question {
   category: "document" | "emotional"
 }
 
-// Boilerplate questions -- replace document questions with actual extracted fields later
 const QUESTIONS: Question[] = [
-  // Document-related questions (boilerplate)
-  {
-    id: "doc-1",
-    text: "What is the project name listed on the document?",
-    category: "document",
-  },
-  {
-    id: "doc-2",
-    text: "Who is the primary contact or author of this document?",
-    category: "document",
-  },
-  {
-    id: "doc-3",
-    text: "What is the submission or effective date?",
-    category: "document",
-  },
-  {
-    id: "doc-4",
-    text: "What is the document classification or type?",
-    category: "document",
-  },
-  // Emotional state questions
-  {
-    id: "emo-1",
-    text: "How are you feeling about this submission?",
-    category: "emotional",
-  },
-  {
-    id: "emo-2",
-    text: "On a scale of 1-5, how confident are you in the accuracy of this document?",
-    category: "emotional",
-  },
-  {
-    id: "emo-3",
-    text: "Is there anything causing you concern about this process?",
-    category: "emotional",
-  },
+  { id: "doc-1", text: "Training Session ID:", category: "document" },
+  { id: "doc-2", text: "Trainer's Name:", category: "document" },
+  { id: "doc-3", text: "Key Topics Covered:", category: "document" },
+  { id: "emo-1", text: "What are three aspects of your health and well-being you want to improve?", category: "emotional" },
+  { id: "emo-2", text: "I feel that my manager supports flexibility for my daily needs.", category: "emotional" },
+  { id: "emo-3", text: "My company allows me to express my feelings and emotions without fear of punishment.", category: "emotional" },
 ]
 
 interface QuestionFlowProps {
@@ -69,168 +35,139 @@ export function QuestionFlow({ documentName, onComplete }: QuestionFlowProps) {
   const progress = Math.round((currentIndex / totalQuestions) * 100)
   const allDone = currentIndex >= totalQuestions
 
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, isTyping])
 
-  // Push the first assistant question on mount
+  // FIX: Consolidated single useEffect to prevent double-triggering
   useEffect(() => {
-    // Reset ref on each mount so strict mode re-mount works
     let cancelled = false
-
-    const greetingMsg: Message = {
-      id: "greeting",
-      role: "assistant",
-      content: `I've received "${documentName}". I'll now ask you a few questions about the document and how you're feeling. 
-      Remember: The questions do not reflect the actual document and this is for demo purposes only! Let's begin! 
-      `,
-      timestamp: new Date(),
-    }
-
-    setIsTyping(true)
     setMessages([])
+    setIsTyping(true)
 
     const t1 = setTimeout(() => {
       if (cancelled) return
-      setMessages([greetingMsg])
+      setMessages([{
+        id: "greeting",
+        role: "assistant",
+        content: `I've received "${documentName}". I'll now ask you a few questions.`,
+        timestamp: new Date(),
+      }])
       setIsTyping(false)
     }, 1000)
 
     const t2 = setTimeout(() => {
       if (cancelled) return
       setIsTyping(true)
-    }, 1400)
+    }, 1800)
 
     const t3 = setTimeout(() => {
       if (cancelled) return
       const q = QUESTIONS[0]
-      const qMsg: Message = {
+      setMessages((prev) => [...prev, {
         id: `q-${q.id}`,
         role: "assistant",
         content: q.text,
         timestamp: new Date(),
         category: q.category,
-      }
-      setMessages((prev) => [...prev, qMsg])
+      }])
       setIsTyping(false)
-    }, 2200)
+    }, 2800)
 
-    return () => {
-      cancelled = true
-      clearTimeout(t1)
-      clearTimeout(t2)
-      clearTimeout(t3)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    return () => { cancelled = true; clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); }
+  }, [documentName])
 
   const handleAnswer = useCallback(
     (answer: string) => {
       if (allDone || isTyping) return
 
       const currentQ = QUESTIONS[currentIndex]
-
-      // Add user message
-      const userMsg: Message = {
-        id: `a-${currentQ.id}`,
-        role: "user",
-        content: answer,
-        timestamp: new Date(),
+      
+      // NEW: Minimum character limit logic for emotional questions
+      const charLimit = 100
+      if (currentQ.category === "emotional" && answer.length < charLimit) {
+        const userMsg: Message = { id: `err-u-${Date.now()}`, role: "user", content: answer, timestamp: new Date() }
+        setMessages((prev) => [...prev, userMsg])
+        setIsTyping(true)
+        
+        setTimeout(() => {
+          const errorMsg: Message = {
+            id: `err-a-${Date.now()}`,
+            role: "assistant",
+            content: `This reflection is a bit brief (${answer.length}/${charLimit} chars). To ensure we capture your true thoughts, please provide a more detailed response.`,
+            timestamp: new Date(),
+          }
+          setMessages((prev) => [...prev, errorMsg])
+          setIsTyping(false)
+        }, 800)
+        return
       }
 
+      const userMsg: Message = { id: `a-${currentQ.id}`, role: "user", content: answer, timestamp: new Date() }
       const newAnswers = { ...answers, [currentQ.id]: answer }
       setAnswers(newAnswers)
       setMessages((prev) => [...prev, userMsg])
 
       const nextIndex = currentIndex + 1
-      setCurrentIndex(nextIndex)
-
-      // Show next question or completion
       setIsTyping(true)
+
       setTimeout(() => {
+        // Transition: Moving from document to emotional
+        if (nextIndex < totalQuestions && currentQ.category === "document" && QUESTIONS[nextIndex].category === "emotional") {
+          setMessages((prev) => [...prev, {
+            id: "trans", role: "assistant", content: "Thank you. Now, let's move into some deeper emotional reflections.", timestamp: new Date()
+          }])
+          setTimeout(() => {
+            const nextQ = QUESTIONS[nextIndex]
+            setMessages((prev) => [...prev, { id: `q-${nextQ.id}`, role: "assistant", content: nextQ.text, timestamp: new Date() }])
+            setCurrentIndex(nextIndex)
+            setIsTyping(false)
+          }, 1500)
+          return
+        }
+
         if (nextIndex < totalQuestions) {
           const nextQ = QUESTIONS[nextIndex]
-          const nextMsg: Message = {
-            id: `q-${nextQ.id}`,
-            role: "assistant",
-            content: nextQ.text,
-            timestamp: new Date(),
-            category: nextQ.category,
-          }
-          setMessages((prev) => {
-            const updated = [...prev, nextMsg]
-            return updated
-          })
+          setMessages((prev) => [...prev, { id: `q-${nextQ.id}`, role: "assistant", content: nextQ.text, timestamp: new Date() }])
+          setCurrentIndex(nextIndex)
           setIsTyping(false)
         } else {
-          // Build a summary mapping each question to its answer
-          const documentLines = QUESTIONS
-            .filter((q) => q.category === "document")
-            .map((q) => `- **${q.text}**\n  ${newAnswers[q.id] || "(no answer)"}`)
-            .join("\n")
-
-          const emotionalLines = QUESTIONS
-            .filter((q) => q.category === "emotional")
-            .map((q) => `- **${q.text}**\n  ${newAnswers[q.id] || "(no answer)"}`)
-            .join("\n")
-
-          const summaryContent =
-            `Here's a summary of your responses:\n\n` +
-            `Document Information:\n${documentLines}\n\n` +
-            `Well-being Check:\n${emotionalLines}\n\n` +
-            `If everything looks correct, feel free to continue chatting about your document.`
-
-          const doneMsg: Message = {
-            id: "complete",
+          // Final Completion: Display Field Mapping
+          const summaryMsg: Message = {
+            id: "summary",
             role: "assistant",
-            content: summaryContent,
+            content: "Form complete! Here is how your data was mapped:",
             timestamp: new Date(),
           }
-          setMessages((prev) => {
-            const updated = [...prev, doneMsg]
-            onComplete(newAnswers, updated)
-            return updated
-          })
+          setMessages((prev) => [...prev, summaryMsg])
+          setCurrentIndex(nextIndex)
           setIsTyping(false)
+          onComplete(newAnswers, messages)
         }
       }, 900)
     },
-    [currentIndex, allDone, isTyping, answers, totalQuestions, onComplete]
+    [currentIndex, allDone, isTyping, answers, totalQuestions, onComplete, messages]
   )
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Progress bar */}
       {!allDone && (
         <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-2.5">
           <Progress value={progress} className="h-2 flex-1" />
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">
-            {currentIndex} / {totalQuestions}
-          </span>
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">{currentIndex} / {totalQuestions}</span>
         </div>
       )}
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl py-4">
           {messages.map((msg) => (
             <ChatMessage key={msg.id} message={msg} />
           ))}
-          {isTyping && <TypingIndicator />}
           <div ref={bottomRef} />
         </div>
       </div>
 
-      {/* Input */}
-      <ChatInput
-        onSend={handleAnswer}
-        isLoading={isTyping}
-        disabled={allDone}
-        placeholder={
-          allDone ? "Questions complete!" : "Type your answer..."
-        }
-      />
+      <ChatInput onSend={handleAnswer} isLoading={isTyping} disabled={allDone} placeholder={allDone ? "Form Submitted!" : "Type your answer..."} />
     </div>
   )
 }

@@ -73,49 +73,49 @@ export function ChatInput({
   }
 
   // Speech recognition
-  const startRecording = useCallback(() => {
-    if (disabled) return
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) return
+  // const startRecording = useCallback(() => {
+  //   if (disabled) return
+  //   const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  //   if (!SR) return
 
-    const recognition = new SR()
-    recognition.continuous = true
-    recognition.interimResults = true
-    recognition.lang = "en-US"
+  //   const recognition = new SR()
+  //   recognition.continuous = true
+  //   recognition.interimResults = true
+  //   recognition.lang = "en-US"
 
-    let finalTranscript = ""
+  //   let finalTranscript = ""
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = ""
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript
-        } else {
-          interim += transcript
-        }
-      }
-      setInput(() => finalTranscript + interim)
-    }
+  //   recognition.onresult = (event: SpeechRecognitionEvent) => {
+  //     let interim = ""
+  //     for (let i = event.resultIndex; i < event.results.length; i++) {
+  //       const transcript = event.results[i][0].transcript
+  //       if (event.results[i].isFinal) {
+  //         finalTranscript += transcript
+  //       } else {
+  //         interim += transcript
+  //       }
+  //     }
+  //     setInput(() => finalTranscript + interim)
+  //   }
 
-    recognition.onerror = () => {
-      setIsRecording(false)
-      setRecordingTime(0)
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
+  //   recognition.onerror = () => {
+  //     setIsRecording(false)
+  //     setRecordingTime(0)
+  //     if (timerRef.current) clearInterval(timerRef.current)
+  //   }
 
-    recognition.onend = () => {
-      setIsRecording(false)
-      setRecordingTime(0)
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
+  //   recognition.onend = () => {
+  //     setIsRecording(false)
+  //     setRecordingTime(0)
+  //     if (timerRef.current) clearInterval(timerRef.current)
+  //   }
 
-    recognitionRef.current = recognition
-    recognition.start()
-    setIsRecording(true)
-    setRecordingTime(0)
-    timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000)
-  }, [disabled])
+  //   recognitionRef.current = recognition
+  //   recognition.start()
+  //   setIsRecording(true)
+  //   setRecordingTime(0)
+  //   timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000)
+  // }, [disabled])
 
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
@@ -130,16 +130,16 @@ export function ChatInput({
     }
   }, [])
 
-  function toggleRecording() {
-    if (isRecording) stopRecording()
-    else startRecording()
-  }
+  // function toggleRecording() {
+  //   if (isRecording) stopRecording()
+  //   else startRecording()
+  // }
 
-  function formatRecordingTime(seconds: number) {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m}:${s.toString().padStart(2, "0")}`
-  }
+  // function formatRecordingTime(seconds: number) {
+  //   const m = Math.floor(seconds / 60)
+  //   const s = seconds % 60
+  //   return `${m}:${s.toString().padStart(2, "0")}`
+  // }
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -167,7 +167,7 @@ export function ChatInput({
                         ? "text-destructive hover:text-destructive/80"
                         : "text-muted-foreground hover:text-foreground"
                     )}
-                    onClick={toggleRecording}
+                    //onClick={toggleRecording}
                     aria-label={
                       isRecording ? "Stop recording" : "Start voice input"
                     }
@@ -187,7 +187,7 @@ export function ChatInput({
               {isRecording && (
                 <span className="flex items-center gap-1.5 text-xs text-destructive">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-destructive" />
-                  {formatRecordingTime(recordingTime)}
+                  {/*formatRecordingTime(recordingTime)*/}
                 </span>
               )}
             </div>

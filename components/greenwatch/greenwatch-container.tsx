@@ -18,20 +18,17 @@ export function GreenWatchContainer() {
   const [chatMessages, setChatMessages] = useState<Message[]>([])
 
   const handleUpload = useCallback(async (file: File) => {
-    console.log("[v0] handleUpload called with file:", file.name)
     setDocumentName(file.name)
 
     // Call the boilerplate backend upload
     try {
       const result = await uploadDocument(file)
-      console.log("[v0] Upload result:", result)
       setDocumentId(result.documentId)
     } catch {
       // Fallback ID in case the mock fails
       setDocumentId(`doc-${Date.now()}`)
     }
 
-    console.log("[v0] Setting phase to questions")
     setPhase("questions")
   }, [])
 

@@ -4,22 +4,7 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Bot, User, FileText, Leaf } from "lucide-react"
 
-export interface Attachment {
-  id: string
-  name: string
-  size: number
-  type: string
-}
-
-export interface Message {
-  id: string
-  role: "user" | "assistant"
-  content: string
-  timestamp: Date
-  attachments?: Attachment[]
-  category?: "document" | "emotional" | null
-}
-
+// ... (formatTime and formatFileSize helpers remain the same)
 function formatTime(date: Date) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 }
@@ -50,59 +35,35 @@ export function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === "user"
 
   return (
-    <div
-      className={cn(
-        "flex items-start gap-3 px-4 py-2",
-        isUser && "flex-row-reverse"
-      )}
-    >
+    <div className={cn("flex items-start gap-3 px-4 py-2 w-full", isUser && "flex-row-reverse")}>
       <Avatar className={cn("h-8 w-8 shrink-0", isUser ? "bg-primary" : "bg-muted")}>
-        <AvatarFallback
-          className={cn(
-            isUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
-          )}
-        >
-          {isUser ? (
-            <User className="h-4 w-4" />
-          ) : (
-            <Leaf className="h-4 w-4" />
-          )}
+        <AvatarFallback className={cn(isUser ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+          {isUser ? <User className="h-4 w-4" /> : <Leaf className="h-4 w-4" />}
         </AvatarFallback>
       </Avatar>
-      <div
-        className={cn(
-          "flex max-w-[75%] flex-col gap-1",
-          isUser && "items-end"
-        )}
-      >
-        {!isUser && message.category && (
-          <CategoryBadge category={message.category} />
-        )}
+
+      <div className={cn("flex max-w-[85%] flex-col gap-1 min-w-0", isUser && "items-end")}>
+        {!isUser && message.category && <CategoryBadge category={message.category} />}
+        
+        {/* RESTORED: Attachment Icons Section */}
         {message.attachments && message.attachments.length > 0 && (
-          <div className={cn("flex flex-wrap gap-1.5", isUser && "justify-end")}>
+          <div className="flex flex-wrap gap-2 mb-1">
             {message.attachments.map((file) => (
-              <div
-                key={file.id}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs",
-                  isUser
-                    ? "bg-primary/80 text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                )}
-              >
-                <FileText className="h-3.5 w-3.5 shrink-0" />
-                <span className="max-w-[140px] truncate font-medium">{file.name}</span>
-                <span className="opacity-70">{formatFileSize(file.size)}</span>
+              <div key={file.id} className="flex items-center gap-2 rounded-lg border border-border bg-background p-2 shadow-sm">
+                <FileText className="h-4 w-4 text-primary" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium truncate max-w-[120px]">{file.name}</span>
+                  <span className="text-[10px] text-muted-foreground">{formatFileSize(file.size)}</span>
+                </div>
               </div>
             ))}
           </div>
         )}
+
         {message.content && (
           <div
             className={cn(
-              "rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+              "rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words h-auto", 
               isUser
                 ? "rounded-tr-md bg-primary text-primary-foreground"
                 : "rounded-tl-md border border-border bg-card text-card-foreground shadow-sm"
@@ -111,9 +72,7 @@ export function ChatMessage({ message }: { message: Message }) {
             {message.content}
           </div>
         )}
-        <span className="px-1 text-xs text-muted-foreground">
-          {formatTime(message.timestamp)}
-        </span>
+        <span className="px-1 text-xs text-muted-foreground">{formatTime(message.timestamp)}</span>
       </div>
     </div>
   )
