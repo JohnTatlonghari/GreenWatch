@@ -1,0 +1,2 @@
+#pragma code_page(65001)
+1 /* CREATEPROCESS_MANIFEST_RESOURCE_ID */ 24 /* RT_MANIFEST */ "C:/Users/arman/Desktop/sfHacks26/GreenWatch/NativeRunner/out/build/x64-Debug/CMakeFiles/greenwatch_runner.dir/embed.manifest"
